@@ -1,0 +1,94 @@
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import AnalogPage from './AnalogPage';
+import DigitalPage from './DigitalPage';
+import TextPage from './TextPage';
+import navIcon from '../assets/navicon.svg'; 
+
+function TimerPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const { minutes = 10, isInterval = false, hasBreak = false } = location.state || {};
+
+  const workSeconds = minutes * 60;
+  const breakSeconds = 300; 
+
+  const [secondsRemaining, setSecondsRemaining] = useState(workSeconds);
+  const [view, setView] = useState('digital');
+  const [isBreak, setIsBreak] = useState(false);
+  const [cycles, setCycles] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); 
+
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setSecondsRemaining((prevSecondsRemaining) => {
+        if (prevSecondsRemaining === 0) {
+          if (isBreak) {
+            setIsBreak(false);
+            setCycles(cycles + 1);  
+            return workSeconds; 
+          } else {
+            if (isInterval || hasBreak) {
+              if (hasBreak) {
+                setIsBreak(true);
+                return breakSeconds; 
+              } else {
+                setCycles(cycles + 1);
+                return workSeconds; 
+              }
+            } else {
+              clearInterval(timerId);
+              navigate('/end'); 
+              return 0;
+            }
+          }
+        }
+        return prevSecondsRemaining - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [workSeconds, breakSeconds, isInterval, hasBreak, isBreak, cycles, navigate]);
+
+  const changeView = (newView) => {
+    setView(newView);
+    setIsMenuOpen(false); 
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const cancelTimer = () => {
+    navigate('/set-timer'); 
+  };
+
+  return (
+    <div className='timerpage'>
+      <h1 className='LOGO'>interval</h1>
+
+      {view === 'analog' && <AnalogPage secondsRemaining={secondsRemaining} />}
+      {view === 'digital' && <DigitalPage secondsRemaining={secondsRemaining} />}
+      {view === 'text' && <TextPage secondsRemaining={secondsRemaining} />}
+
+      <button onClick={toggleMenu} className="hamburger-menu">
+        <img src={navIcon} alt="Menu Icon" /> 
+      </button>
+
+      {isMenuOpen && (
+        <div className="menu">
+          <ul>
+            <li onClick={() => changeView('analog')}>Analog View</li>
+            <li onClick={() => changeView('digital')}>Digital View</li>
+            <li onClick={() => changeView('text')}>Text View</li>
+          </ul>
+        </div>
+      )}
+
+      <button className='abort-button' onClick={cancelTimer}>ABORT TIMER</button>
+    </div>
+  );
+}
+
+export default TimerPage;
